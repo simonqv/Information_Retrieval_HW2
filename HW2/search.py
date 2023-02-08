@@ -15,6 +15,15 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     print('running search on the queries...')
     # This is an empty method
     # Pls implement your code in below
+    queries = open(queries_file, "r")
+    for query in queries.readlines():
+        tokens = query.split()
+        print(tokens.index("AND"))
+
+
+
+
+
 
 dictionary_file = postings_file = file_of_queries = output_file_of_results = None
 
