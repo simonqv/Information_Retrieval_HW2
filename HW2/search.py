@@ -34,9 +34,6 @@ def shunting_yard(tokens):
             output.append(operators.pop())
         return output
 
-"""
-    Function to evaluate the boolean expression in inverse polish notation, using the postings list, find the documents that satisfy the query
-"""
 
 def evaluate(shunting_yard_list, postings_list):
 
@@ -72,7 +69,7 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     perform searching on the given queries file and output the results to a file
     """
     print('running search on the queries...')
-    
+
     postings = pickle.load(open(postings_file, "rb"))
     queries = open(queries_file, "r")
     for query in queries.readlines():
