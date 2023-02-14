@@ -3,9 +3,65 @@ import re
 import nltk
 import sys
 import getopt
+import pickle
 
 def usage():
     print("usage: " + sys.argv[0] + " -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results")
+
+def shunting_yard(tokens):
+        output = []
+        operators = []
+        for token in tokens:
+            if token == '(':
+                operators.append(token)
+            elif token == ')':
+                while operators[-1] != '(':
+                    output.append(operators.pop())
+                operators.pop()
+            elif token == 'AND':
+                while operators and operators[-1] == 'NOT':
+                    output.append(operators.pop())
+                operators.append(token)
+            elif token == 'OR':
+                while operators and operators[-1] != '(':
+                    output.append(operators.pop())
+                operators.append(token)
+            elif token == 'NOT':
+                operators.append(token)
+            else:
+                output.append(token)
+        while operators:
+            output.append(operators.pop())
+        return output
+
+
+def evaluate(shunting_yard_list, postings_list):
+
+    seen = set()
+    for i in postings_list:
+        for j in postings_list[i]:
+            if j not in seen:
+                seen.add(j)
+
+    stack = []
+    for token in shunting_yard_list:
+        if token == 'AND':
+            a = stack.pop()
+            b = stack.pop()
+            # intersection of a and b
+            stack.append([x for x in a if x in b])
+        elif token == 'OR':
+            a = stack.pop()
+            b = stack.pop()
+            # union of a and b
+            stack.append(a + b)
+        elif token == 'NOT':
+            a = stack.pop()
+            # invert a
+            stack.append([x for x in seen if x not in a])
+        else:
+            stack.append(postings_list[token])
+    return stack.pop()
 
 def run_search(dict_file, postings_file, queries_file, results_file):
     """
@@ -13,14 +69,12 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     perform searching on the given queries file and output the results to a file
     """
     print('running search on the queries...')
-    # This is an empty method
-    # Pls implement your code in below
+
+    postings = pickle.load(open(postings_file, "rb"))
     queries = open(queries_file, "r")
     for query in queries.readlines():
         tokens = query.split()
-        print(tokens.index("AND"))
-
-
+        print(evaluate(shunting_yard(tokens), postings))
 
 
 
