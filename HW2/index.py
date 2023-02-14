@@ -60,9 +60,9 @@ def build_index(in_dir, out_dict, out_postings):
     for k in postings_lists:
         postings_lists[k] = sorted(set(postings_lists[k]))
 
-    with open("dictionary-file", "wb") as handle:
+    with open(out_dict, "wb") as handle:
         pickle.dump(term_doc_freq, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    with open("postings-file", "wb") as handle:
+    with open(out_postings, "wb") as handle:
         pickle.dump(postings_lists, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     print("indexing done...")
