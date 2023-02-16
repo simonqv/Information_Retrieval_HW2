@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import math
 import sys
 import getopt
 import os
@@ -60,10 +61,18 @@ def build_index(in_dir, out_dict, out_postings):
     for k in postings_lists:
         postings_lists[k] = sorted(set(postings_lists[k]))
 
+    skip_pointers = []
+    for k in postings_lists:
+        postings = postings_lists[k]
+        if len(postings) > 3:
+            skip_pointers.append((k, [postings[i] for i in range(0, len(postings), math.floor(math.sqrt(len(postings))))]))
+
     with open(out_dict, "wb") as handle:
         pickle.dump(term_doc_freq, handle, protocol=pickle.HIGHEST_PROTOCOL)
     with open(out_postings, "wb") as handle:
         pickle.dump(postings_lists, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open("skip_pointers", "wb") as handle:
+        pickle.dump(skip_pointers, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     print("indexing done...")
 
