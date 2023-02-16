@@ -5,6 +5,12 @@ import sys
 import getopt
 import pickle
 
+from nltk import PorterStemmer
+from nltk.corpus import stopwords
+
+stop_words = set(stopwords.words('english'))
+stemmer = PorterStemmer()
+
 
 def usage():
     print("usage: " + sys.argv[0] + " -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results")
@@ -14,6 +20,9 @@ def shunting_yard(tokens):
     output = []
     operators = []
     for token in tokens:
+        token = stemmer.stem(token).lower()
+        if token in stop_words:
+            break
         if token == '(':
             operators.append(token)
         elif token == ')':
@@ -62,7 +71,10 @@ def evaluate(shunting_yard_list, postings_list):
             stack.append([x for x in seen if x not in a])
         else:
             stack.append(postings_list[token])
-    return stack.pop()
+    if len(stack) != 0:
+        return stack.pop()
+    else:
+        return None
 
 
 def run_search(dict_file, postings_file, queries_file, results_file):
@@ -75,9 +87,12 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     postings = pickle.load(open(postings_file, "rb"))
     queries = open(queries_file, "r")
     for query in queries.readlines():
-        # TODO: Fixa stemming och stopwords.
+        # TODO: Fixa stemming och stop words.
+        # TODO: Skip pointers thing
+
         tokens = query.split()
         print(evaluate(shunting_yard(tokens), postings))
+
 
 
 dictionary_file = postings_file = file_of_queries = output_file_of_results = None
