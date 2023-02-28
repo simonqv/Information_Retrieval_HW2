@@ -54,69 +54,48 @@ def build_index(in_dir, out_dict, out_postings):
     except IOError:
         print("No such file in path:", path)
 
-    term_doc_freq = []
-    for k in sorted(postings_lists.keys()):
-        term_doc_freq.append((k, sorted(list(set([t for t in postings_lists[k]])))))
-    print(term_doc_freq)
 
-    # {word: offset}
-    file_offset = {}
+    term_doc_occ = {}
+    for k in sorted(postings_lists.keys()):
+        sorted_docs = sorted(list(set([t for t in postings_lists[k]])))
+        tups = []
+        for doc in sorted_docs:
+            tups.append([doc, 0])
+        term_doc_occ[k] = tups
 
     for k in postings_lists:
         postings_lists[k] = sorted(set(postings_lists[k]))
 
     postings_output = []
-
-    #  12345 11556 89292 29387
+    current_pos = 0
     for k in postings_lists:
-        # 1 2 3 4 5
+        for i in range(len(term_doc_occ[k])):
+            term_doc_occ[k][i][1] = current_pos
         posting_str = ""
         postings = postings_lists[k]
-
-        for i in postings:
+        step_size = math.floor(math.sqrt(len(postings)))
+        steps = [i for i in range(0, len(postings), math.floor(math.sqrt(len(postings))))]
+        counter = 0
+        for index, i in enumerate(postings):
             str_i = str(i)
             while len(str_i) < ELEMENT_SIZE:
                 str_i = " " + str_i
-            posting_str += str_i + " "
-
-
-        steps = math.floor(math.sqrt(len(postings)))
-        counter = 0
-
-        posting_str = posting_str.rstrip() + "\n"
-        print(posting_str)
+            posting_str += str_i
+            current_pos += ELEMENT_SIZE
+            if len(postings) > 3:
+                if steps[counter] == index and steps[-1] != index:
+                    jump_size = "@" + str((step_size - 1) * ELEMENT_SIZE)
+                    while len(jump_size) < ELEMENT_SIZE:
+                        jump_size = " " + jump_size
+                    posting_str += jump_size
+                    counter += 1
+                    current_pos += ELEMENT_SIZE
         postings_output.append(posting_str)
 
-        """
-        if len(postings) > 3:
-            temp = (k, [i for i in range(0, len(postings), math.floor(math.sqrt(len(postings))))])
-            key = temp[0]
-            pointers = temp[1]
-            print("temp", temp)
-
-            for i in range(len(pointers) - 1):
-                tup = (postings_lists[key][0][0], pointers[i + 1])
-                postings_lists[key][pointers[i]] = tup
-        else:
-            continue
-        """
-
-    # print(postings_output)
-    row_dict = {}
     postings_file = open("postings.txt", "w+")
-    c = 0
-    for p in postings_lists:
-        c += 1
-
-    for key in enumerate(postings_lists.keys()):
-        row_dict[key] = i
-        postings_file.writelines(postings_lists[key])
-
-    print(term_doc_freq)
+    postings_file.writelines(postings_output)
     with open(out_dict, "wb") as handle:
-        pickle.dump(term_doc_freq, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    with open(out_postings, "wb") as handle:
-        pickle.dump(postings_lists, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(term_doc_occ, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     print("indexing done...")
 
