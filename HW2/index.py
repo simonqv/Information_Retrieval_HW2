@@ -15,6 +15,8 @@ def usage():
     print("usage: " + sys.argv[0] + " -i directory-of-documents -d dictionary-file -p postings-file")
 
 
+ELEMENT_SIZE = 6
+
 def build_index(in_dir, out_dict, out_postings):
     """
     build index from documents stored in the input directory,
@@ -72,13 +74,17 @@ def build_index(in_dir, out_dict, out_postings):
         postings = postings_lists[k]
 
         for i in postings:
-            posting_str += str(i) + " "
+            str_i = str(i)
+            while len(str_i) < ELEMENT_SIZE:
+                str_i = " " + str_i
+            posting_str += str_i + " "
+
 
         steps = math.floor(math.sqrt(len(postings)))
         counter = 0
 
-        posting_str = posting_str.strip() + "\n"
-
+        posting_str = posting_str.rstrip() + "\n"
+        print(posting_str)
         postings_output.append(posting_str)
 
         """
