@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import copy
 import re
 import nltk
 import sys
@@ -48,14 +49,13 @@ def shunting_yard(tokens):
 
 
 def evaluate(shunting_yard_list, postings_list):
-    skip_pointers = pickle.load(open("skip_pointers", "rb"))
-    print(skip_pointers)
+
     seen = set()
     for i in postings_list:
         for j in postings_list[i]:
-            if j not in seen:
-                seen.add(j)
-
+            if j[0] not in seen:
+                seen.add(j[0])
+    print("seen, ", seen)
     stack = []
     try:
         for token in shunting_yard_list:
@@ -66,20 +66,25 @@ def evaluate(shunting_yard_list, postings_list):
                 # stack.append([x for x in a if x in b])
                 for i in range(len(a)):
                     for j in range(len(b)):
-                        print("i: ", a[i], "j: ", b[j])
-                        if a[i] == b[j]:
+                        if a[i][0] == b[j][0]:
                             stack.append(a[i])
-
 
             elif token == 'OR':
                 a = stack.pop()
                 b = stack.pop()
                 # union of a and b
-                stack.append(a + b)
+                stack.append(sorted(list(set(a + b))))
+
             elif token == 'NOT':
                 a = stack.pop()
                 # invert a
-                stack.append([x for x in seen if x not in a])
+                # stack.append([x for x in seen if x not in a])
+                # temp = copy.deepcopy(seen)
+                to_exclude = [i[0] for i in a]
+                temp = [t for t in seen if t[0] not in to_exclude]
+                print(temp)
+                print(seen)
+                stack.append(temp)
             else:
                 stack.append(postings_list[token])
         if len(stack) != 0:

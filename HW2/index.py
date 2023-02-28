@@ -71,7 +71,7 @@ def build_index(in_dir, out_dict, out_postings):
             key = temp[0]
             pointers = temp[1]
             for i in range(len(pointers) - 1):
-                tup = (pointers[i], pointers[i+1])
+                tup = (postings_lists[key][0][0], pointers[i+1])
                 postings_lists[key][pointers[i]] = tup
 
     with open(out_dict, "wb") as handle:
