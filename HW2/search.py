@@ -20,7 +20,8 @@ def shunting_yard(tokens):
     output = []
     operators = []
     for token in tokens:
-        token = stemmer.stem(token).lower()
+        if token not in ['(', ')', 'AND', 'OR', 'NOT']:
+            token = stemmer.stem(token).lower()
         if token in stop_words:
             break
         if token == '(':
@@ -47,6 +48,8 @@ def shunting_yard(tokens):
 
 
 def evaluate(shunting_yard_list, postings_list):
+    skip_pointers = pickle.load(open("skip_pointers", "rb"))
+    print(skip_pointers)
     seen = set()
     for i in postings_list:
         for j in postings_list[i]:
@@ -54,28 +57,37 @@ def evaluate(shunting_yard_list, postings_list):
                 seen.add(j)
 
     stack = []
-    for token in shunting_yard_list:
-        if token == 'AND':
-            a = stack.pop()
-            b = stack.pop()
-            # intersection of a and b
-            stack.append([x for x in a if x in b])
-        elif token == 'OR':
-            a = stack.pop()
-            b = stack.pop()
-            # union of a and b
-            stack.append(a + b)
-        elif token == 'NOT':
-            a = stack.pop()
-            # invert a
-            stack.append([x for x in seen if x not in a])
-        else:
-            stack.append(postings_list[token])
-    if len(stack) != 0:
-        return stack.pop()
-    else:
-        return None
+    try:
+        for token in shunting_yard_list:
+            if token == 'AND':
+                a = stack.pop()
+                b = stack.pop()
+                # intersection of a and b
+                # stack.append([x for x in a if x in b])
+                for i in range(len(a)):
+                    for j in range(len(b)):
+                        print("i: ", a[i], "j: ", b[j])
+                        if a[i] == b[j]:
+                            stack.append(a[i])
 
+
+            elif token == 'OR':
+                a = stack.pop()
+                b = stack.pop()
+                # union of a and b
+                stack.append(a + b)
+            elif token == 'NOT':
+                a = stack.pop()
+                # invert a
+                stack.append([x for x in seen if x not in a])
+            else:
+                stack.append(postings_list[token])
+        if len(stack) != 0:
+            return stack.pop()
+        else:
+            return None
+    except (KeyError, IndexError):
+        return None
 
 def run_search(dict_file, postings_file, queries_file, results_file):
     """
@@ -84,6 +96,7 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     """
     print('running search on the queries...')
 
+    dictionary = pickle.load(open(dict_file, "rb"))
     postings = pickle.load(open(postings_file, "rb"))
     queries = open(queries_file, "r")
     for query in queries.readlines():

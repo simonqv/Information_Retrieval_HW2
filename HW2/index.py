@@ -46,13 +46,14 @@ def build_index(in_dir, out_dict, out_postings):
                         for t in tokens[0]:
                             stemmed = stemmer.stem(t).lower()
                             if stemmed in dictionary and stemmed not in stop_words:
-                                postings_lists[stemmed].append(file_name)
+                                postings_lists[stemmed].append((file_name, -1))
                             elif stemmed not in dictionary and stemmed not in stop_words:
                                 dictionary[stemmed] = 0
-                                postings_lists[stemmed] = [file_name]
+                                postings_lists[stemmed] = [(file_name, -1)]
 
     except IOError:
         print("No such file in path:", path)
+
 
     term_doc_freq = []
     for k in sorted(postings_lists.keys()):
@@ -60,19 +61,25 @@ def build_index(in_dir, out_dict, out_postings):
 
     for k in postings_lists:
         postings_lists[k] = sorted(set(postings_lists[k]))
+    # skip_pointers = []
 
-    skip_pointers = []
     for k in postings_lists:
         postings = postings_lists[k]
         if len(postings) > 3:
-            skip_pointers.append((k, [postings[i] for i in range(0, len(postings), math.floor(math.sqrt(len(postings))))]))
+            # skip_pointers.append((k, [i for i in range(0, len(postings), math.floor(math.sqrt(len(postings))))]))
+            temp = (k, [i for i in range(0, len(postings), math.floor(math.sqrt(len(postings))))])
+            key = temp[0]
+            pointers = temp[1]
+            for i in range(len(pointers) - 1):
+                tup = (pointers[i], pointers[i+1])
+                postings_lists[key][pointers[i]] = tup
 
     with open(out_dict, "wb") as handle:
         pickle.dump(term_doc_freq, handle, protocol=pickle.HIGHEST_PROTOCOL)
     with open(out_postings, "wb") as handle:
         pickle.dump(postings_lists, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    with open("skip_pointers", "wb") as handle:
-        pickle.dump(skip_pointers, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # with open("skip_pointers", "wb") as handle:
+    #    pickle.dump(skip_pointers, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     print("indexing done...")
 
