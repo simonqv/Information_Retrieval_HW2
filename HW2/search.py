@@ -47,7 +47,7 @@ def shunting_yard(tokens):
         output.append(operators.pop())
     return output
 
-
+"""
 def evaluate(shunting_yard_list, postings_list):
 
     seen = set()
@@ -90,6 +90,24 @@ def evaluate(shunting_yard_list, postings_list):
             return None
     except (KeyError, IndexError):
         return None
+"""
+def OR(stack):
+    print("nej")
+
+
+def evaluate(shunting_yard_list, postings_list):
+    stack = []
+
+    for token in shunting_yard_list:
+        if token == 'OR':
+            continue
+            # stack.append(OR())
+        elif token == 'AND':
+            continue
+        elif token == 'NOT':
+            continue
+        else:
+            stack.append(postings_list[token])
 
 def run_search(dict_file, postings_file, queries_file, results_file):
     """

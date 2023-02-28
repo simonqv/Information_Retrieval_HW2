@@ -27,8 +27,6 @@ def build_index(in_dir, out_dict, out_postings):
     path = "./nltk_data/corpora/reuters/first"
     # path = "./nltk_data/corpora/reuters/" + in_dir
 
-    # Should this be a list?
-    inv_ind = {}
     dictionary = {}
     stemmer = PorterStemmer()
     stop_words = set(stopwords.words('english'))
@@ -46,40 +44,73 @@ def build_index(in_dir, out_dict, out_postings):
                         for t in tokens[0]:
                             stemmed = stemmer.stem(t).lower()
                             if stemmed in dictionary and stemmed not in stop_words:
-                                postings_lists[stemmed].append((file_name, -1))
+                                postings_lists[stemmed].append(file_name)
                             elif stemmed not in dictionary and stemmed not in stop_words:
                                 dictionary[stemmed] = 0
-                                postings_lists[stemmed] = [(file_name, -1)]
+                                postings_lists[stemmed] = [file_name]
 
     except IOError:
         print("No such file in path:", path)
 
-
     term_doc_freq = []
     for k in sorted(postings_lists.keys()):
-        term_doc_freq.append((k, len(set(postings_lists[k]))))
+        term_doc_freq.append((k, sorted(list(set([t for t in postings_lists[k]])))))
+    print(term_doc_freq)
+
+    # {word: offset}
+    file_offset = {}
 
     for k in postings_lists:
         postings_lists[k] = sorted(set(postings_lists[k]))
-    # skip_pointers = []
 
+    postings_output = []
+
+    #  12345 11556 89292 29387
     for k in postings_lists:
+        # 1 2 3 4 5
+        posting_str = ""
         postings = postings_lists[k]
+
+        for i in postings:
+            posting_str += str(i) + " "
+
+        steps = math.floor(math.sqrt(len(postings)))
+        counter = 0
+
+        posting_str = posting_str.strip() + "\n"
+
+        postings_output.append(posting_str)
+
+        """
         if len(postings) > 3:
-            # skip_pointers.append((k, [i for i in range(0, len(postings), math.floor(math.sqrt(len(postings))))]))
             temp = (k, [i for i in range(0, len(postings), math.floor(math.sqrt(len(postings))))])
             key = temp[0]
             pointers = temp[1]
-            for i in range(len(pointers) - 1):
-                tup = (postings_lists[key][0][0], pointers[i+1])
-                postings_lists[key][pointers[i]] = tup
+            print("temp", temp)
 
+            for i in range(len(pointers) - 1):
+                tup = (postings_lists[key][0][0], pointers[i + 1])
+                postings_lists[key][pointers[i]] = tup
+        else:
+            continue
+        """
+
+    # print(postings_output)
+    row_dict = {}
+    postings_file = open("postings.txt", "w+")
+    c = 0
+    for p in postings_lists:
+        c += 1
+
+    for key in enumerate(postings_lists.keys()):
+        row_dict[key] = i
+        postings_file.writelines(postings_lists[key])
+
+    print(term_doc_freq)
     with open(out_dict, "wb") as handle:
         pickle.dump(term_doc_freq, handle, protocol=pickle.HIGHEST_PROTOCOL)
     with open(out_postings, "wb") as handle:
         pickle.dump(postings_lists, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    # with open("skip_pointers", "wb") as handle:
-    #    pickle.dump(skip_pointers, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     print("indexing done...")
 
