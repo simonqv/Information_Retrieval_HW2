@@ -5,9 +5,7 @@ import getopt
 import pickle
 
 from nltk import PorterStemmer
-from nltk.corpus import stopwords
 
-stop_words = set(stopwords.words('english'))
 stemmer = PorterStemmer()
 
 ELEMENT_SIZE = 6
