@@ -16,6 +16,9 @@ def usage():
 
 
 def shunting_yard(tokens):
+    """
+    Performs shunting yard algorithm to create postfix notation.
+    """
     output = []
     operators = []
     for token in tokens:
@@ -49,7 +52,9 @@ def OR(stack):
     a = stack.pop()
     b = stack.pop()
     output = ""
+    # Pointers for lists a and b
     pa, pb = 0, 0
+    # Iterate over lists a and b
     while pa <= len(a) and pb <= len(b):
         block_a = a[pa: pa + ELEMENT_SIZE]
         block_b = b[pb: pb + ELEMENT_SIZE]
@@ -72,6 +77,7 @@ def OR(stack):
         block_a_int = int(block_a.strip())
         block_b_int = int(block_b.strip())
 
+        # Increment pointer depending on which on points at the smaller number and add elements we've found to output
         if block_a_int < block_b_int:
             output += block_a
             pa += ELEMENT_SIZE
@@ -91,7 +97,9 @@ def AND(stack):
     a = stack.pop()
     b = stack.pop()
     output = ""
+    # Pointers for lists a and b
     pa, pb = 0, 0
+    # Iterate over lists a and b
     while pa < len(a) and pb < len(b):
         block_a = a[pa: pa + ELEMENT_SIZE]
         block_b = b[pb: pb + ELEMENT_SIZE]
@@ -116,6 +124,7 @@ def AND(stack):
             b_len = int(block_b.split("@")[1])
             b_next = int(b[pb + ELEMENT_SIZE + b_len: pb + 2 * ELEMENT_SIZE + b_len])
             a_int = int(block_a.strip())
+
             # Use skip pointer
             if b_next <= a_int:
                 pb += b_len + ELEMENT_SIZE
@@ -127,17 +136,21 @@ def AND(stack):
 
         block_a_int = int(block_a.strip())
         block_b_int = int(block_b.strip())
+
+        # Increment pointer depending on which on points at the smaller number
         if block_a_int < block_b_int:
             pa += ELEMENT_SIZE
         elif block_a_int > block_b_int:
             pb += ELEMENT_SIZE
         else:
+            # We found a match
             output += block_a
             pa += ELEMENT_SIZE
     stack.append(output)
 
 
 def NOT(stack, all_docs):
+    # Inverts the list
     a = stack.pop()
     to_exclude = [int(i) for i in a.split() if not i.startswith("@")]
     temp = [t for t in all_docs if t not in to_exclude]
@@ -151,6 +164,9 @@ def NOT(stack, all_docs):
 
 
 def evaluate(shunting_yard_list, dictionary, postings):
+    """
+    Main function for evaluating the query.
+    """
     stack = []
     all_docs = set()
     only_one_token = True
@@ -175,9 +191,11 @@ def evaluate(shunting_yard_list, dictionary, postings):
     except IndexError:
         pass
 
+    # Format output
     try:
         output = []
         temp_output = stack.pop().split()
+        # Special case if the query only consist of one word/token and no operators, remove skip pointers.
         if only_one_token:
             for o in temp_output:
                 if not o.startswith("@"):
@@ -189,6 +207,9 @@ def evaluate(shunting_yard_list, dictionary, postings):
 
 
 def find_docs(token, dictonary, postings):
+    """
+    Help function to index into the postings file.
+    """
     nr_docs, offset = dictonary[token]
     postings.seek(offset)
     return postings.readline()
@@ -205,11 +226,13 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     postings = open(postings_file, "r+")
     queries = open(queries_file, "r+")
     output = []
+
+    # For each query, evaluate
     for query in queries.readlines():
         tokens = nltk.word_tokenize(query)
-
         output.append(evaluate(shunting_yard(tokens), dictionary, postings))
 
+    # Create the output and write to file
     out_file = open(results_file, "w+")
     for line in output:
         out_file.writelines(" ".join(line) + "\n")
