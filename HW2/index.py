@@ -4,10 +4,7 @@ import sys
 import getopt
 import os
 import pickle
-# nltk.download('punkt')
-# nltk.download('stopwords')
 from nltk.tokenize import sent_tokenize, word_tokenize
-from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
 
@@ -25,13 +22,12 @@ def build_index(in_dir, out_dict, out_postings):
     print('indexing...')
     # This is an empty method
     # Pls implement your code in below
-    # nltk.download()
     # path = "./nltk_data/corpora/reuters/first"
     path = in_dir
 
     dictionary = {}
     stemmer = PorterStemmer()
-    stop_words = set(stopwords.words('english'))
+    # stop_words = set(stopwords.words('english'))
     postings_lists = {}
 
     try:
@@ -45,9 +41,9 @@ def build_index(in_dir, out_dict, out_postings):
                     if len(tokens) != 0:
                         for t in tokens[0]:
                             stemmed = stemmer.stem(t).lower()
-                            if stemmed in dictionary and stemmed not in stop_words:
+                            if stemmed in dictionary: # and stemmed not in stop_words:
                                 postings_lists[stemmed].append(file_name)
-                            elif stemmed not in dictionary and stemmed not in stop_words:
+                            elif stemmed not in dictionary: # and stemmed not in stop_words:
                                 dictionary[stemmed] = 0
                                 postings_lists[stemmed] = [file_name]
 

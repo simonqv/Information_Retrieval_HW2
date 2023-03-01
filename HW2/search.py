@@ -14,6 +14,7 @@ stemmer = PorterStemmer()
 
 ELEMENT_SIZE = 6
 
+
 def usage():
     print("usage: " + sys.argv[0] + " -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results")
 
@@ -24,8 +25,8 @@ def shunting_yard(tokens):
     for token in tokens:
         if token not in ['(', ')', 'AND', 'OR', 'NOT']:
             token = stemmer.stem(token).lower()
-        if token in stop_words:
-            break
+        # if token in stop_words:
+        #     break
         if token == '(':
             operators.append(token)
         elif token == ')':
@@ -102,12 +103,11 @@ def AND(stack):
         block_b = b[pb: pb + ELEMENT_SIZE]
         a_at = block_a.strip().startswith("@")
         b_at = block_b.strip().startswith("@")
-        print()
         # Check if we want to use skip pointer
 
         if a_at:
             a_len = int(block_a.split("@")[1])
-            a_next = int(a[pa + ELEMENT_SIZE + a_len: pa + 2*ELEMENT_SIZE + a_len])
+            a_next = int(a[pa + ELEMENT_SIZE + a_len: pa + 2 * ELEMENT_SIZE + a_len])
             b_int = int(block_b.strip())
 
             # Use skip pointer
@@ -120,10 +120,9 @@ def AND(stack):
                 block_a = a[pa: pa + ELEMENT_SIZE]
 
         if b_at:
-            b_len = int(block_b.split("@"[1]))
-            b_next = int(b[pb + ELEMENT_SIZE + b_len: pb + 2*ELEMENT_SIZE + b_len])
+            b_len = int(block_b.split("@")[1])
+            b_next = int(b[pb + ELEMENT_SIZE + b_len: pb + 2 * ELEMENT_SIZE + b_len])
             a_int = int(block_a.strip())
-
             # Use skip pointer
             if b_next <= a_int:
                 pb += b_len + ELEMENT_SIZE
@@ -135,7 +134,6 @@ def AND(stack):
 
         block_a_int = int(block_a.strip())
         block_b_int = int(block_b.strip())
-
         if block_a_int < block_b_int:
             pa += ELEMENT_SIZE
         elif block_a_int > block_b_int:
@@ -143,7 +141,6 @@ def AND(stack):
         else:
             output += block_a
             pa += ELEMENT_SIZE
-            pb += ELEMENT_SIZE
     stack.append(output)
 
 
@@ -163,6 +160,7 @@ def NOT(stack, all_docs):
 def evaluate(shunting_yard_list, dictionary, postings):
     stack = []
     all_docs = set()
+    only_one_token = True
     try:
         for key in dictionary:
             row = find_docs(key, dictionary, postings)
@@ -171,22 +169,31 @@ def evaluate(shunting_yard_list, dictionary, postings):
         for token in shunting_yard_list:
             if token == 'OR':
                 OR(stack)
+                only_one_token = False
             elif token == 'AND':
                 AND(stack)
+                only_one_token = False
             elif token == 'NOT':
                 NOT(stack, all_docs)
+                only_one_token = False
             else:
                 temp = find_docs(token, dictionary, postings)
                 stack.append(temp.rstrip())
     except IndexError:
         pass
 
-    print("Output", stack)
     try:
-        output = stack.pop().split()
+        output = []
+        temp_output = stack.pop().split()
+        if only_one_token:
+            for o in temp_output:
+                if not o.startswith("@"):
+                    output.append(o)
+
     except:
         output = []
     return output
+
 
 def find_docs(token, dictonary, postings):
     nr_docs, offset = dictonary[token]
@@ -206,14 +213,13 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     queries = open(queries_file, "r+")
     output = []
     for query in queries.readlines():
-        tokens = query.split()
+        tokens = nltk.word_tokenize(query)
 
         output.append(evaluate(shunting_yard(tokens), dictionary, postings))
 
     out_file = open(results_file, "w+")
     for line in output:
         out_file.writelines(" ".join(line) + "\n")
-
 
 
 dictionary_file = postings_file = file_of_queries = output_file_of_results = None
