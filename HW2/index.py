@@ -26,8 +26,8 @@ def build_index(in_dir, out_dict, out_postings):
     # This is an empty method
     # Pls implement your code in below
     # nltk.download()
-    path = "./nltk_data/corpora/reuters/first"
-    # path = "./nltk_data/corpora/reuters/" + in_dir
+    # path = "./nltk_data/corpora/reuters/first"
+    path = in_dir
 
     dictionary = {}
     stemmer = PorterStemmer()
@@ -69,8 +69,8 @@ def build_index(in_dir, out_dict, out_postings):
     postings_output = []
     current_pos = 0
     for k in postings_lists:
-        for i in range(len(term_doc_occ[k])):
-            term_doc_occ[k][i][1] = current_pos
+        # How many occurrences files with word, and offset to word in postings
+        term_doc_occ[k] = (len(term_doc_occ[k]), current_pos)
         posting_str = ""
         postings = postings_lists[k]
         step_size = math.floor(math.sqrt(len(postings)))
@@ -90,9 +90,10 @@ def build_index(in_dir, out_dict, out_postings):
                     posting_str += jump_size
                     counter += 1
                     current_pos += ELEMENT_SIZE
-        postings_output.append(posting_str)
+        postings_output.append(posting_str + "\n")
+        current_pos += 1
 
-    postings_file = open("postings.txt", "w+")
+    postings_file = open(out_postings, "w+")
     postings_file.writelines(postings_output)
     with open(out_dict, "wb") as handle:
         pickle.dump(term_doc_occ, handle, protocol=pickle.HIGHEST_PROTOCOL)

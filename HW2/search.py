@@ -12,6 +12,7 @@ from nltk.corpus import stopwords
 stop_words = set(stopwords.words('english'))
 stemmer = PorterStemmer()
 
+ELEMENT_SIZE = 6
 
 def usage():
     print("usage: " + sys.argv[0] + " -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results")
@@ -47,80 +48,150 @@ def shunting_yard(tokens):
         output.append(operators.pop())
     return output
 
-"""
-def evaluate(shunting_yard_list, postings_list):
 
-    seen = set()
-    for i in postings_list:
-        for j in postings_list[i]:
-            if j[0] not in seen:
-                seen.add(j[0])
-    stack = []
-    try:
-        for token in shunting_yard_list:
-            if token == 'AND':
-                a = stack.pop()
-                b = stack.pop()
-                # intersection of a and b
-                # stack.append([x for x in a if x in b])
-                for i in range(len(a)):
-                    for j in range(len(b)):
-                        if a[i][0] == b[j][0]:
-                            stack.append(a[i])
-
-            elif token == 'OR':
-                a = stack.pop()
-                b = stack.pop()
-                # union of a and b
-                stack.append(sorted(list(set(a + b))))
-
-            elif token == 'NOT':
-                a = stack.pop()
-                # invert a
-                # stack.append([x for x in seen if x not in a])
-                # temp = copy.deepcopy(seen)
-                to_exclude = [i[0] for i in a]
-                temp = [(t, -1) for t in seen if t not in to_exclude]
-                stack.append(temp)
-            else:
-                stack.append(postings_list[token])
-        if len(stack) != 0:
-            return stack.pop()
-        else:
-            return None
-    except (KeyError, IndexError):
-        return None
-"""
 def OR(stack):
-    print("not done")
+    # union of a and b
+    a = stack.pop()
+    b = stack.pop()
+    output = ""
+    pa, pb = 0, 0
+    while pa <= len(a) and pb <= len(b):
+        block_a = a[pa: pa + ELEMENT_SIZE]
+        block_b = b[pb: pb + ELEMENT_SIZE]
+        if block_a.strip().startswith("@"):
+            pa += ELEMENT_SIZE
+            continue
+        if block_b.strip().startswith("@"):
+            pb += ELEMENT_SIZE
+            continue
+
+        if pa == len(a):
+            output += block_b
+            pb += ELEMENT_SIZE
+            continue
+        if pb == len(b):
+            output += block_a
+            pa += ELEMENT_SIZE
+            continue
+
+        block_a_int = int(block_a.strip())
+        block_b_int = int(block_b.strip())
+
+        if block_a_int < block_b_int:
+            output += block_a
+            pa += ELEMENT_SIZE
+        elif block_a_int > block_b_int:
+            output += block_b
+            pb += ELEMENT_SIZE
+        else:
+            output += block_a
+            pa += ELEMENT_SIZE
+            pb += ELEMENT_SIZE
+
+    stack.append(output)
+
 
 def AND(stack):
-    print("not done")
+    # intersection of a and b
+    a = stack.pop()
+    b = stack.pop()
+    output = ""
+    pa, pb = 0, 0
+    while pa < len(a) and pb < len(b):
+        block_a = a[pa: pa + ELEMENT_SIZE]
+        block_b = b[pb: pb + ELEMENT_SIZE]
+        a_at = block_a.strip().startswith("@")
+        b_at = block_b.strip().startswith("@")
+        print()
+        # Check if we want to use skip pointer
 
-def NOT(stack):
-    print("not done")
+        if a_at:
+            a_len = int(block_a.split("@")[1])
+            a_next = int(a[pa + ELEMENT_SIZE + a_len: pa + 2*ELEMENT_SIZE + a_len])
+            b_int = int(block_b.strip())
 
-def AND_NOT(stack):
-    print("not done")
+            # Use skip pointer
+            if a_next <= b_int:
+                pa += a_len + ELEMENT_SIZE
+                block_a = a[pa: pa + ELEMENT_SIZE]
+            # Don't use skip pointer
+            else:
+                pa += ELEMENT_SIZE
+                block_a = a[pa: pa + ELEMENT_SIZE]
 
+        if b_at:
+            b_len = int(block_b.split("@"[1]))
+            b_next = int(b[pb + ELEMENT_SIZE + b_len: pb + 2*ELEMENT_SIZE + b_len])
+            a_int = int(block_a.strip())
+
+            # Use skip pointer
+            if b_next <= a_int:
+                pb += b_len + ELEMENT_SIZE
+                block_b = b[pb: pb + ELEMENT_SIZE]
+            # Don't use skip pointer
+            else:
+                pb += ELEMENT_SIZE
+                block_b = b[pb: pb + ELEMENT_SIZE]
+
+        block_a_int = int(block_a.strip())
+        block_b_int = int(block_b.strip())
+
+        if block_a_int < block_b_int:
+            pa += ELEMENT_SIZE
+        elif block_a_int > block_b_int:
+            pb += ELEMENT_SIZE
+        else:
+            output += block_a
+            pa += ELEMENT_SIZE
+            pb += ELEMENT_SIZE
+    stack.append(output)
+
+
+def NOT(stack, all_docs):
+    a = stack.pop()
+    to_exclude = [int(i) for i in a.split() if not i.startswith("@")]
+    temp = [t for t in all_docs if t not in to_exclude]
+    output = ""
+    for t in temp:
+        t = str(t)
+        while len(t) < ELEMENT_SIZE:
+            t = " " + t
+        output += t
+    stack.append(output)
 
 
 def evaluate(shunting_yard_list, dictionary, postings):
-    # TODO: Skip pointers thing
     stack = []
+    all_docs = set()
+    try:
+        for key in dictionary:
+            row = find_docs(key, dictionary, postings)
+            [all_docs.add(int(x)) for x in row.split() if not x.startswith("@")]
 
-    for token in shunting_yard_list:
-        if token == 'OR':
-            continue
-        elif token == 'AND':
-            continue
-        elif token == 'NOT':
-            continue
-        elif token == "AND_NOT":
-            continue
-        else:
-            stack.append(postings[token])
+        for token in shunting_yard_list:
+            if token == 'OR':
+                OR(stack)
+            elif token == 'AND':
+                AND(stack)
+            elif token == 'NOT':
+                NOT(stack, all_docs)
+            else:
+                temp = find_docs(token, dictionary, postings)
+                stack.append(temp.rstrip())
+    except IndexError:
+        pass
 
+    print("Output", stack)
+    try:
+        output = stack.pop().split()
+    except:
+        output = []
+    return output
+
+def find_docs(token, dictonary, postings):
+    nr_docs, offset = dictonary[token]
+    postings.seek(offset)
+    return postings.readline()
 
 
 def run_search(dict_file, postings_file, queries_file, results_file):
@@ -133,9 +204,15 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     dictionary = pickle.load(open(dict_file, "rb"))
     postings = open(postings_file, "r+")
     queries = open(queries_file, "r+")
+    output = []
     for query in queries.readlines():
         tokens = query.split()
-        print(evaluate(shunting_yard(tokens), dictionary, postings))
+
+        output.append(evaluate(shunting_yard(tokens), dictionary, postings))
+
+    out_file = open(results_file, "w+")
+    for line in output:
+        out_file.writelines(" ".join(line) + "\n")
 
 
 
