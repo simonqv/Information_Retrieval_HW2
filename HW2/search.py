@@ -92,22 +92,36 @@ def evaluate(shunting_yard_list, postings_list):
         return None
 """
 def OR(stack):
-    print("nej")
+    print("not done")
+
+def AND(stack):
+    print("not done")
+
+def NOT(stack):
+    print("not done")
+
+def AND_NOT(stack):
+    print("not done")
 
 
-def evaluate(shunting_yard_list, postings_list):
+
+def evaluate(shunting_yard_list, dictionary, postings):
+    # TODO: Skip pointers thing
     stack = []
 
     for token in shunting_yard_list:
         if token == 'OR':
             continue
-            # stack.append(OR())
         elif token == 'AND':
             continue
         elif token == 'NOT':
             continue
+        elif token == "AND_NOT":
+            continue
         else:
-            stack.append(postings_list[token])
+            stack.append(postings[token])
+
+
 
 def run_search(dict_file, postings_file, queries_file, results_file):
     """
@@ -117,14 +131,11 @@ def run_search(dict_file, postings_file, queries_file, results_file):
     print('running search on the queries...')
 
     dictionary = pickle.load(open(dict_file, "rb"))
-    postings = pickle.load(open(postings_file, "rb"))
-    queries = open(queries_file, "r")
+    postings = open(postings_file, "r+")
+    queries = open(queries_file, "r+")
     for query in queries.readlines():
-        # TODO: Fixa stemming och stop words.
-        # TODO: Skip pointers thing
-
         tokens = query.split()
-        print(evaluate(shunting_yard(tokens), postings))
+        print(evaluate(shunting_yard(tokens), dictionary, postings))
 
 
 
