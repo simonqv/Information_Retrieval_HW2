@@ -27,7 +27,6 @@ def build_index(in_dir, out_dict, out_postings):
 
     dictionary = {}
     stemmer = PorterStemmer()
-    # stop_words = set(stopwords.words('english'))
     postings_lists = {}
 
     try:
@@ -41,9 +40,9 @@ def build_index(in_dir, out_dict, out_postings):
                     if len(tokens) != 0:
                         for t in tokens[0]:
                             stemmed = stemmer.stem(t).lower()
-                            if stemmed in dictionary: # and stemmed not in stop_words:
+                            if stemmed in dictionary:
                                 postings_lists[stemmed].append(file_name)
-                            elif stemmed not in dictionary: # and stemmed not in stop_words:
+                            elif stemmed not in dictionary:
                                 dictionary[stemmed] = 0
                                 postings_lists[stemmed] = [file_name]
 

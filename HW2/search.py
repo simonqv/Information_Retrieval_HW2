@@ -1,6 +1,4 @@
 #!/usr/bin/python3
-import copy
-import re
 import nltk
 import sys
 import getopt
@@ -25,8 +23,6 @@ def shunting_yard(tokens):
     for token in tokens:
         if token not in ['(', ')', 'AND', 'OR', 'NOT']:
             token = stemmer.stem(token).lower()
-        # if token in stop_words:
-        #     break
         if token == '(':
             operators.append(token)
         elif token == ')':
@@ -101,11 +97,9 @@ def AND(stack):
     while pa < len(a) and pb < len(b):
         block_a = a[pa: pa + ELEMENT_SIZE]
         block_b = b[pb: pb + ELEMENT_SIZE]
-        a_at = block_a.strip().startswith("@")
-        b_at = block_b.strip().startswith("@")
-        # Check if we want to use skip pointer
 
-        if a_at:
+        # Check if we want to use skip pointer
+        if block_a.strip().startswith("@"):
             a_len = int(block_a.split("@")[1])
             a_next = int(a[pa + ELEMENT_SIZE + a_len: pa + 2 * ELEMENT_SIZE + a_len])
             b_int = int(block_b.strip())
@@ -119,7 +113,8 @@ def AND(stack):
                 pa += ELEMENT_SIZE
                 block_a = a[pa: pa + ELEMENT_SIZE]
 
-        if b_at:
+        # Check if we want to use skip pointer
+        if block_b.strip().startswith("@"):
             b_len = int(block_b.split("@")[1])
             b_next = int(b[pb + ELEMENT_SIZE + b_len: pb + 2 * ELEMENT_SIZE + b_len])
             a_int = int(block_a.strip())
