@@ -14,7 +14,6 @@ def usage():
 
 ELEMENT_SIZE = 6
 
-
 def build_index(in_dir, out_dict, out_postings):
     """
     build index from documents stored in the input directory,
@@ -30,7 +29,6 @@ def build_index(in_dir, out_dict, out_postings):
     stemmer = PorterStemmer()
     postings_lists = {}
 
-    # Tokenizing and stemming of words in documents
     try:
         with os.scandir(path) as it:
             for entry in it:
@@ -42,18 +40,16 @@ def build_index(in_dir, out_dict, out_postings):
                     if len(tokens) != 0:
                         for t in tokens[0]:
                             stemmed = stemmer.stem(t).lower()
-
-                            # Add tokens to temporary postings list
                             if stemmed in dictionary:
                                 postings_lists[stemmed].append(file_name)
                             elif stemmed not in dictionary:
                                 dictionary[stemmed] = 0
                                 postings_lists[stemmed] = [file_name]
-    # Handles errors if we can't find the file.
+
     except IOError:
         print("No such file in path:", path)
 
-    # This becomes the Dictionary file
+
     term_doc_occ = {}
     for k in sorted(postings_lists.keys()):
         sorted_docs = sorted(list(set([t for t in postings_lists[k]])))
@@ -62,11 +58,9 @@ def build_index(in_dir, out_dict, out_postings):
             tups.append([doc, 0])
         term_doc_occ[k] = tups
 
-    # Finding unique documents for each key
     for k in postings_lists:
         postings_lists[k] = sorted(set(postings_lists[k]))
 
-    # Building the output file postings.txt
     postings_output = []
     current_pos = 0
     for k in postings_lists:
@@ -74,21 +68,18 @@ def build_index(in_dir, out_dict, out_postings):
         term_doc_occ[k] = (len(term_doc_occ[k]), current_pos)
         posting_str = ""
         postings = postings_lists[k]
-        step_size = math.floor(math.sqrt(len(postings)))    # Finding a length for skip pointers as described during lecture
+        step_size = math.floor(math.sqrt(len(postings)))
         steps = [i for i in range(0, len(postings), math.floor(math.sqrt(len(postings))))]
         counter = 0
         for index, i in enumerate(postings):
             str_i = str(i)
-            # Padding the strings with white spaces
             while len(str_i) < ELEMENT_SIZE:
                 str_i = " " + str_i
             posting_str += str_i
             current_pos += ELEMENT_SIZE
-            # Add skip pointers if the number of documents are more than 3
             if len(postings) > 3:
                 if steps[counter] == index and steps[-1] != index:
                     jump_size = "@" + str((step_size - 1) * ELEMENT_SIZE)
-                    # Padding the strings with white spaces
                     while len(jump_size) < ELEMENT_SIZE:
                         jump_size = " " + jump_size
                     posting_str += jump_size
@@ -97,7 +88,6 @@ def build_index(in_dir, out_dict, out_postings):
         postings_output.append(posting_str + "\n")
         current_pos += 1
 
-    # Write everything fo files.
     postings_file = open(out_postings, "w+")
     postings_file.writelines(postings_output)
     with open(out_dict, "wb") as handle:
